@@ -2173,25 +2173,27 @@ Always generate elc files too and handle native compiler expected errors."
          (rename-file tempfile target-file t))))))
 
 ;;;###autoload
-(defun native-compile-async (input &optional jobs recursively)
-  "Compile INPUT asynchronously.
-INPUT can be either a list of files a folder or a file.
-JOBS specifies the number of jobs (commands) to run simultaneously (1 default).
-Follow folders RECURSIVELY if non nil."
-  (let ((jobs (or jobs 1))
-        (files (if (listp input)
-                   input
-                 (if (file-directory-p input)
-                     (if recursively
-                         (directory-files-recursively input "\\.el$")
-                       (directory-files input t "\\.el$"))
-                   (if (file-exists-p input)
-                       (list input)
-                     (signal 'native-compiler-error
-                             "input not a file nor directory"))))))
+(cl-defun native-compile-async (paths &optional (jobs 1) recursively)
+  "Compile PATHS asynchronously.
+PATHS is one path or a list of paths to files or directories.
+JOBS specifies the number of jobs (commands) to run
+simultaneously (1 default).  If RECURSIVELY, recurse into
+subdirectories of given directories."
+  (unless (listp paths)
+    (setf paths (list paths)))
+  (let (files)
+    (dolist (path paths)
+      (cond ((file-directory-p path)
+             (dolist (file (if recursively
+                               (directory-files-recursively path "\\.el$")
+                             (directory-files path t "\\.el$")))
+               (push file files)))
+            ((file-exists-p path) (push path files))
+            (t (signal 'native-compiler-error
+                       (list "Path not a file nor directory" path)))))
     (setf comp-files-queue (nconc files comp-files-queue))
-    (cl-loop repeat jobs
-             do (comp-start-async-worker))
+    (dotimes (_ jobs)
+      (comp-start-async-worker))
     (message "Compilation started.")))
 
 (provide 'comp)
