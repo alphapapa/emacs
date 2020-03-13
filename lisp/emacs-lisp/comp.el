@@ -2055,8 +2055,8 @@ Prepare every function for final compilation and drive the C back-end."
 (defvar comp-source-files ()
   "List of Elisp files to be compiled.")
 
-(defvar comp-prc-pool ()
-  "List containing all async compilation processes.")
+(defvar comp-async-processes ()
+  "List of running async compilation processes.")
 
 (defun comp-start-async-worker ()
   "Start compiling files from `comp-source-files' asynchronously.
@@ -2092,11 +2092,11 @@ display a message."
 					source-file)
 				       (accept-process-output process)
 				       (comp-start-async-worker)))))
-	    (push process comp-prc-pool)))
+	    (push process comp-async-processes)))
     ;; No files left to compile.
-    (when (cl-notany #'process-live-p comp-prc-pool)
+    (when (cl-notany #'process-live-p comp-async-processes)
       (let ((msg "Compilation finished."))
-	(setf comp-prc-pool nil)
+	(setf comp-async-processes nil)
 	(run-hooks 'comp-async-all-done-hook)
 	(with-current-buffer (get-buffer-create comp-async-buffer-name)
 	  (save-excursion
