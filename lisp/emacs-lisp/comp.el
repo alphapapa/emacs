@@ -2058,13 +2058,6 @@ Prepare every function for final compilation and drive the C back-end."
 (defvar comp-prc-pool ()
   "List containing all async compilation processes.")
 
-(defun comp-to-file-p (file)
-  "Return t if FILE has to be compiled."
-  (let ((compiled-f (concat file "n")))
-    (or comp-always-compile
-        (not (and (file-exists-p compiled-f)
-                  (file-newer-than-file-p compiled-f file))))))
-
 (defun comp-start-async-worker ()
   "Start compiling files from `comp-src-pool' asynchronously.
 When compilation is finished, run `comp-async-all-done-hook' and
@@ -2073,7 +2066,8 @@ display a message."
       (cl-loop
        for source-file = (pop comp-src-pool)
        while source-file
-       when (comp-to-file-p source-file)
+       when (or comp-always-compile
+                (file-newer-than-file-p file (concat source-file "n")))
        do (let* ((expr `(progn
 			  (require 'comp)
 			  (setf comp-speed ,comp-speed
