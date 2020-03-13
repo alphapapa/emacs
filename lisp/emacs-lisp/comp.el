@@ -2119,8 +2119,7 @@ Return the compilation unit file name."
             (list "Not a function symbol or file" function-or-file)))
   (let* ((data function-or-file)
          (comp-native-compiling t)
-         ;; Have the byte compiler signal an error when compilation
-         ;; fails.
+         ;; Have byte compiler signal an error when compilation fails.
          (byte-compile-debug t)
          (comp-ctxt
           (make-comp-ctxt
