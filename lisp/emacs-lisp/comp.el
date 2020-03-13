@@ -2052,22 +2052,22 @@ Prepare every function for final compilation and drive the C back-end."
 
 ;; Some entry point support code.
 
-(defvar comp-source-files ()
+(defvar comp-files-queue ()
   "List of Elisp files to be compiled.")
 
 (defvar comp-async-processes ()
   "List of running async compilation processes.")
 
 (defun comp-start-async-worker ()
-  "Start compiling files from `comp-source-files' asynchronously.
+  "Start compiling files from `comp-files-queue' asynchronously.
 When compilation is finished, run `comp-async-all-done-hook' and
 display a message."
-  (if comp-source-files
+  (if comp-files-queue
       (cl-loop
-       for source-file = (pop comp-source-files)
+       for source-file = (pop comp-files-queue)
        while source-file
        do (cl-assert (string-match-p (rx ".el" eos) source-file) nil
-                     "`comp-source-files' should be \".el\" files: %s"
+                     "`comp-files-queue' should be \".el\" files: %s"
                      source-file)
        when (or comp-always-compile
                 (file-newer-than-file-p file (concat source-file "n")))
@@ -2189,7 +2189,7 @@ Follow folders RECURSIVELY if non nil."
                        (list input)
                      (signal 'native-compiler-error
                              "input not a file nor directory"))))))
-    (setf comp-source-files (nconc files comp-source-files))
+    (setf comp-files-queue (nconc files comp-files-queue))
     (cl-loop repeat jobs
              do (comp-start-async-worker))
     (message "Compilation started.")))
