@@ -2198,8 +2198,8 @@ subdirectories of given directories."
             (t (signal 'native-compiler-error
                        (list "Path not a file nor directory" path)))))
     (setf comp-files-queue (nconc files comp-files-queue))
-    (dotimes (_ jobs)
-      (comp-start-async-worker))
+    (cl-loop repeat jobs
+             do (comp-start-async-worker))
     (message "Compilation started.")))
 
 (provide 'comp)
