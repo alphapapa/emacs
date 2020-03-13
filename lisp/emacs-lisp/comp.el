@@ -357,40 +357,44 @@ Assume allocaiton class 'd-default as default."
                                            comp-curr-allocation-class))))
 
 (cl-defun comp-log (data (level 1))
-  "Log DATA to log buffer at LEVEL.
-LEVEL is a number from 1-3.  When it is >= `comp-verbose', DATA
-is logged."
+  "Log DATA at LEVEL.
+LEVEL is a number from 1-3; if it is less than `comp-verbose', do
+nothing.  If `noninteractive', log with `message'.  Otherwise,
+log with `comp-log-to-buffer'."
   (when (>= comp-verbose level)
     (if noninteractive
         (cl-typecase data
           (atom (message "%s" data))
           (t (dolist (elem data)
                (message "%s" elem))))
-      ;; Log to buffer.
-      (let* ((log-buffer
-              (or (get-buffer comp-log-buffer-name)
-                  (with-current-buffer (get-buffer-create comp-log-buffer-name)
-                    (setf buffer-read-only t)
-                    (current-buffer))))
-             (log-window (get-buffer-window log-buffer))
-             (inhibit-read-only t)
-             at-end-p)
-        (with-current-buffer log-buffer
-          (when (= (point) (point-max))
-            (setf at-end-p t))
-          (save-excursion
-            (goto-char (point-max))
-            (cl-typecase data
-              (atom (princ data log-buffer))
-              (t (dolist (elem data)
-                   (princ elem log-buffer)
-                   (insert "\n"))))
-            (insert "\n"))
-          (when (and at-end-p log-window)
-            ;; When log log-buffer's window's point is at the end, follow
-            ;; the log's tail.
-            (with-selected-window log-window
-              (goto-char (point-max)))))))))
+      (comp-log-to-buffer data))))
+
+(cl-defun comp-log-to-buffer (data)
+  "Log DATA to `comp-log-buffer-name'."
+  (let* ((log-buffer
+          (or (get-buffer comp-log-buffer-name)
+              (with-current-buffer (get-buffer-create comp-log-buffer-name)
+                (setf buffer-read-only t)
+                (current-buffer))))
+         (log-window (get-buffer-window log-buffer))
+         (inhibit-read-only t)
+         at-end-p)
+    (with-current-buffer log-buffer
+      (when (= (point) (point-max))
+        (setf at-end-p t))
+      (save-excursion
+        (goto-char (point-max))
+        (cl-typecase data
+          (atom (princ data log-buffer))
+          (t (dolist (elem data)
+               (princ elem log-buffer)
+               (insert "\n"))))
+        (insert "\n"))
+      (when (and at-end-p log-window)
+        ;; When log log-buffer's window's point is at the end, follow
+        ;; the log's tail.
+        (with-selected-window log-window
+          (goto-char (point-max)))))))
 
 (defun comp-log-func (func verbosity)
   "Log function FUNC.
