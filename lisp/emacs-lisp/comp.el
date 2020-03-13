@@ -2191,8 +2191,8 @@ subdirectories of given directories."
     (dolist (path paths)
       (cond ((file-directory-p path)
              (dolist (file (if recursively
-                               (directory-files-recursively path "\\.el$")
-                             (directory-files path t "\\.el$")))
+                               (directory-files-recursively path (rx ".el" eos))
+                             (directory-files path t (rx ".el" eos))))
                (push file files)))
             ((file-exists-p path) (push path files))
             (t (signal 'native-compiler-error
