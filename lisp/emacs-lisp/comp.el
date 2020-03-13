@@ -391,8 +391,7 @@ log with `comp-log-to-buffer'."
                (insert "\n"))))
         (insert "\n"))
       (when (and at-end-p log-window)
-        ;; When log log-buffer's window's point is at the end, follow
-        ;; the log's tail.
+        ;; When log window's point is at the end, follow the tail.
         (with-selected-window log-window
           (goto-char (point-max)))))))
 
