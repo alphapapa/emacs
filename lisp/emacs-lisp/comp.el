@@ -2065,43 +2065,48 @@ Prepare every function for final compilation and drive the C back-end."
         (not (and (file-exists-p compiled-f)
                   (file-newer-than-file-p compiled-f file))))))
 
-(cl-defun comp-start-async-worker ()
-  "Run an async compile worker."
-  (let (f)
-    (while (setf f (pop comp-src-pool))
-      (when (comp-to-file-p f)
-        (let* ((code `(progn
-                        (require 'comp)
-                        (setf comp-speed ,comp-speed
-                              comp-debug ,comp-debug
-                              comp-verbose ,comp-verbose
-                              load-path ',load-path)
-                        (message "Compiling %s started." ,f)
-                        (native-compile ,f))))
-          (push (make-process :name (concat "Compiling: " f)
-                              :buffer (get-buffer-create comp-async-buffer-name)
-                              :command (list (concat invocation-directory
-                                                     invocation-name)
-                                             "--batch"
-                                             "--eval"
-                                             (prin1-to-string code))
-                              :sentinel (lambda (prc _event)
-                                          (run-hook-with-args
-                                           'comp-async-cu-done-hook
-                                           f)
-                                          (accept-process-output prc)
-                                          (comp-start-async-worker)))
-                comp-prc-pool)
-          (cl-return-from comp-start-async-worker))))
+(defun comp-start-async-worker ()
+  "Start compiling files from `comp-src-pool' asynchronously.
+When compilation is finished, run `comp-async-all-done-hook' and
+display a message."
+  (if comp-src-pool
+      (cl-loop
+       for source-file = (pop comp-src-pool)
+       while source-file
+       when (comp-to-file-p source-file)
+       do (let* ((expr `(progn
+			  (require 'comp)
+			  (setf comp-speed ,comp-speed
+				comp-debug ,comp-debug
+				comp-verbose ,comp-verbose
+				load-path ',load-path)
+			  (message "Compiling %s..." ,source-file)
+			  (native-compile ,source-file)))
+		 (process (make-process
+                           :name (concat "Compiling: " source-file)
+			   :buffer (get-buffer-create comp-async-buffer-name)
+			   :command (list
+                                     (expand-file-name invocation-name
+					               invocation-directory)
+				     "--batch" "--eval" (prin1-to-string expr))
+			   :sentinel (lambda (process _event)
+				       (run-hook-with-args
+					'comp-async-cu-done-hook
+					source-file)
+				       (accept-process-output process)
+				       (comp-start-async-worker)))))
+	    (push process comp-prc-pool)))
+    ;; No files left to compile.
     (when (cl-notany #'process-live-p comp-prc-pool)
       (let ((msg "Compilation finished."))
-        (setf comp-prc-pool ())
-        (run-hooks 'comp-async-all-done-hook)
-        (with-current-buffer (get-buffer-create comp-async-buffer-name)
-          (save-excursion
-            (goto-char (point-max))
-            (insert msg "\n")))
-        (message msg)))))
+	(setf comp-prc-pool nil)
+	(run-hooks 'comp-async-all-done-hook)
+	(with-current-buffer (get-buffer-create comp-async-buffer-name)
+	  (save-excursion
+	    (goto-char (point-max))
+	    (insert msg "\n")))
+	(message msg)))))
+
 
 ;;; Compiler entry points.
 
@@ -2115,7 +2120,7 @@ Return the compilation unit file name."
   (unless (or (symbolp input)
               (stringp input))
     (signal 'native-compiler-error
-          (list "not a symbol function or file" input)))
+            (list "not a symbol function or file" input)))
   (let ((data input)
         (comp-native-compiling t)
         ;; Have the byte compiler signal an error when compilation
