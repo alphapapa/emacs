@@ -2072,37 +2072,37 @@ display a message."
        when (or comp-always-compile
                 (file-newer-than-file-p file (concat source-file "n")))
        do (let* ((expr `(progn
-			  (require 'comp)
-			  (setf comp-speed ,comp-speed
-				comp-debug ,comp-debug
-				comp-verbose ,comp-verbose
-				load-path ',load-path)
-			  (message "Compiling %s..." ,source-file)
-			  (native-compile ,source-file)))
-		 (process (make-process
+                          (require 'comp)
+                          (setf comp-speed ,comp-speed
+                                comp-debug ,comp-debug
+                                comp-verbose ,comp-verbose
+                                load-path ',load-path)
+                          (message "Compiling %s..." ,source-file)
+                          (native-compile ,source-file)))
+                 (process (make-process
                            :name (concat "Compiling: " source-file)
-			   :buffer (get-buffer-create comp-async-buffer-name)
-			   :command (list
+                           :buffer (get-buffer-create comp-async-buffer-name)
+                           :command (list
                                      (expand-file-name invocation-name
-					               invocation-directory)
-				     "--batch" "--eval" (prin1-to-string expr))
-			   :sentinel (lambda (process _event)
-				       (run-hook-with-args
-					'comp-async-cu-done-hook
-					source-file)
-				       (accept-process-output process)
-				       (comp-start-async-worker)))))
-	    (push process comp-async-processes)))
+                                                       invocation-directory)
+                                     "--batch" "--eval" (prin1-to-string expr))
+                           :sentinel (lambda (process _event)
+                                       (run-hook-with-args
+                                        'comp-async-cu-done-hook
+                                        source-file)
+                                       (accept-process-output process)
+                                       (comp-start-async-worker)))))
+            (push process comp-async-processes)))
     ;; No files left to compile.
     (when (cl-notany #'process-live-p comp-async-processes)
       (let ((msg "Compilation finished."))
-	(setf comp-async-processes nil)
-	(run-hooks 'comp-async-all-done-hook)
-	(with-current-buffer (get-buffer-create comp-async-buffer-name)
-	  (save-excursion
-	    (goto-char (point-max))
-	    (insert msg "\n")))
-	(message msg)))))
+        (setf comp-async-processes nil)
+        (run-hooks 'comp-async-all-done-hook)
+        (with-current-buffer (get-buffer-create comp-async-buffer-name)
+          (save-excursion
+            (goto-char (point-max))
+            (insert msg "\n")))
+        (message msg)))))
 
 
 ;;; Compiler entry points.
@@ -2114,35 +2114,35 @@ This is the entry-point for the Emacs Lisp native compiler.
 FUNCTION-OR-FILE is a function symbol or a path to an Elisp file.
 Return the compilation unit file name."
   (unless (or (functionp function-or-file)
-	      (stringp function-or-file))
+              (stringp function-or-file))
     (signal 'native-compiler-error
-	    (list "Not a function symbol or file" function-or-file)))
+            (list "Not a function symbol or file" function-or-file)))
   (let* ((data function-or-file)
-	 (comp-native-compiling t)
+         (comp-native-compiling t)
          ;; Have the byte compiler signal an error when compilation
          ;; fails.
          (byte-compile-debug t)
-	 (comp-ctxt
-	  (make-comp-ctxt
-	   :output
-	   (if (symbolp function-or-file)
-	       (make-temp-file (concat (symbol-name function-or-file) "-"))
-	     (let* ((expanded-filename (expand-file-name function-or-file))
-		    (output-dir (file-name-as-directory
-				 (concat (file-name-directory expanded-filename)
-					 comp-native-path-postfix)))
-		    (output-filename
-		     (file-name-sans-extension
-		      (file-name-nondirectory expanded-filename))))
-	       (expand-file-name output-filename output-dir))))))
+         (comp-ctxt
+          (make-comp-ctxt
+           :output
+           (if (symbolp function-or-file)
+               (make-temp-file (concat (symbol-name function-or-file) "-"))
+             (let* ((expanded-filename (expand-file-name function-or-file))
+                    (output-dir (file-name-as-directory
+                                 (concat (file-name-directory expanded-filename)
+                                         comp-native-path-postfix)))
+                    (output-filename
+                     (file-name-sans-extension
+                      (file-name-nondirectory expanded-filename))))
+               (expand-file-name output-filename output-dir))))))
     (comp-log "\n\n" 1)
     (condition-case err
-	(mapc (lambda (pass)
-		(comp-log (format "(%s) Running pass %s:\n"
-				  function-or-file pass)
-			  2)
-		(setf data (funcall pass data)))
-	      comp-passes)
+        (mapc (lambda (pass)
+                (comp-log (format "(%s) Running pass %s:\n"
+                                  function-or-file pass)
+                          2)
+                (setf data (funcall pass data)))
+              comp-passes)
       (native-compiler-error
        ;; Add source input.
        (let ((err-val (cdr err)))
