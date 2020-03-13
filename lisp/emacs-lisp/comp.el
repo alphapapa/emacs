@@ -2066,6 +2066,9 @@ display a message."
       (cl-loop
        for source-file = (pop comp-source-files)
        while source-file
+       do (cl-assert (string-match-p (rx ".el" eos) source-file) nil
+                     "`comp-source-files' should be \".el\" files: %s"
+                     source-file)
        when (or comp-always-compile
                 (file-newer-than-file-p file (concat source-file "n")))
        do (let* ((expr `(progn
