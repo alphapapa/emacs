@@ -2153,7 +2153,8 @@ Return the compilation unit file name."
 
 ;;;###autoload
 (defun batch-native-compile ()
-  "Ultra cheap impersonation of `batch-byte-compile'."
+  "Run `native-compile' on remaining command-line arguments.
+Ultra cheap impersonation of `batch-byte-compile'."
   (mapc #'native-compile command-line-args-left))
 
 ;;;###autoload
