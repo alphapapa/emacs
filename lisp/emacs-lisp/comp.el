@@ -2096,7 +2096,7 @@ display a message."
     ;; No files left to compile.
     (when (cl-notany #'process-live-p comp-async-processes)
       (let ((msg "Compilation finished."))
-        (setf comp-async-processes nil)
+        (setf comp-async-processes ())
         (run-hooks 'comp-async-all-done-hook)
         (with-current-buffer (get-buffer-create comp-async-buffer-name)
           (save-excursion
