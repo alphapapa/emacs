@@ -356,7 +356,7 @@ Assume allocaiton class 'd-default as default."
   (puthash obj t (comp-data-container-idx (comp-alloc-class-to-container
                                            comp-curr-allocation-class))))
 
-(cl-defun comp-log (data (level 1))
+(cl-defun comp-log (data &optional (level 1))
   "Log DATA at LEVEL.
 LEVEL is a number from 1-3; if it is less than `comp-verbose', do
 nothing.  If `noninteractive', log with `message'.  Otherwise,
