@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'seq) ; tab-line.el is not pre-loaded so it's safe to use it here
 
 
@@ -34,6 +35,14 @@
   "Window-local tabs."
   :group 'convenience
   :version "27.1")
+
+(defcustom tab-line-alternate-colors t
+  "Alternate background colors of inactive tabs.
+When non-nil, alternating tabs use the face
+`tab-line-tab-inactive-alternate'."
+  :type 'boolean
+  :group 'tab-line
+  :version "28.1")
 
 (defgroup tab-line-faces '((tab-line custom-face)) ; tab-line is defined in faces.el
   "Faces used in the tab line."
@@ -61,6 +70,14 @@
      :inverse-video t))
   "Tab line face for non-selected tab."
   :version "27.1"
+  :group 'tab-line-faces)
+
+(defface tab-line-tab-inactive-alternate
+  (let ((mode-line-bg (face-background 'mode-line nil t)))
+    `((t (:inherit tab-line-tab-inactive :background ,mode-line-bg))))
+  "Alternate face for inactive tab-line tabs.
+Used on alternating tabs when `tab-line-alternate-colors' is non-nil."
+  :version "28.1"
   :group 'tab-line-faces)
 
 (defface tab-line-tab-current
@@ -403,6 +420,7 @@ variable `tab-line-tabs-function'."
   (let* ((selected-buffer (window-buffer))
          (separator (or tab-line-separator (if window-system " " "|")))
          (hscroll (window-parameter nil 'tab-line-hscroll))
+         (tab-number 0)
          (strings
           (mapcar
            (lambda (tab)
@@ -412,7 +430,16 @@ variable `tab-line-tabs-function'."
                                   (cdr (assq 'selected tab))))
                     (name (if buffer-p
                               (funcall tab-line-tab-name-function tab tabs)
-                            (cdr (assq 'name tab)))))
+                            (cdr (assq 'name tab))))
+                    (face (cond (selected-p
+                                 (if (eq (selected-window) (old-selected-window))
+                                     'tab-line-tab-current
+                                   'tab-line-tab))
+                                ((and tab-line-alternate-colors
+                                      (cl-evenp (cl-incf tab-number)))
+                                 'tab-line-tab-inactive-alternate)
+                                (t
+                                 'tab-line-tab-inactive))))
                (concat
                 separator
                 (apply 'propertize
@@ -425,11 +452,7 @@ variable `tab-line-tabs-function'."
                        `(
                          tab ,tab
                          ,@(if selected-p '(selected t))
-                         face ,(if selected-p
-                                   (if (eq (selected-window) (old-selected-window))
-                                       'tab-line-tab-current
-                                     'tab-line-tab)
-                                 'tab-line-tab-inactive)
+                         face ,face
                          mouse-face tab-line-highlight)))))
            tabs))
          (hscroll-data (tab-line-auto-hscroll strings hscroll)))
