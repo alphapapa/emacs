@@ -36,19 +36,23 @@
   :group 'convenience
   :version "27.1")
 
-(defcustom tab-line-alternate-colors t
-  "Alternate background colors of inactive tabs.
-When non-nil, alternating tabs use the face
-`tab-line-tab-inactive-alternate'."
-  :type 'boolean
-  :group 'tab-line
-  :version "28.1")
-
 (defcustom tab-line-tab-face-function #'tab-line-tab-face-default
   "Function called to get a tab's face.
 The function is called with two arguments: the tab and a list of
 all tabs."
-  :type 'function
+  :type '(choice (function-item :tag "Default" tab-line-tab-face-default)
+                 (function :tag "Custom function"))
+  :group 'tab-line
+  :version "28.1")
+
+(defcustom tab-line-tab-face-modifiers '(tab-line-tab-face-special)
+  "Functions called to modify tab faces.
+Each function is called with three arguments: the tab, a list of
+all tabs, and the face returned by the previously called
+modifier."
+  :type '(set (function-item tab-line-tab-face-special)
+              (function-item tab-line-tab-face-inactive-alternating)
+              (function :tag "Custom function"))
   :group 'tab-line
   :version "28.1")
 
@@ -81,15 +85,18 @@ all tabs."
   :group 'tab-line-faces)
 
 (defface tab-line-tab-inactive-alternate
-  (let ((mode-line-bg (face-background 'mode-line nil t)))
-    `((t (:inherit tab-line-tab-inactive :background ,mode-line-bg))))
+  `((t (:inherit tab-line-tab-inactive :background "grey65")))
   "Alternate face for inactive tab-line tabs.
-Used on alternating tabs when `tab-line-alternate-colors' is non-nil."
+Applied to alternating tabs when option
+`tab-line-tab-face-modifiers' includes function
+`tab-line-tab-face-inactive-alternating'."
   :version "28.1"
   :group 'tab-line-faces)
 
 (defface tab-line-tab-special '((t (:slant italic)))
-  "Face for special (i.e. non-file-backed) tabs."
+  "Face for special (i.e. non-file-backed) tabs.
+Applied when option `tab-line-tab-face-modifiers' includes
+function `tab-line-tab-face-special'."
   :version "28.1"
   :group 'tab-line-faces)
 
@@ -433,7 +440,6 @@ variable `tab-line-tabs-function'."
   (let* ((selected-buffer (window-buffer))
          (separator (or tab-line-separator (if window-system " " "|")))
          (hscroll (window-parameter nil 'tab-line-hscroll))
-         (tab-number 0)
          (strings
           (mapcar
            (lambda (tab)
@@ -446,6 +452,8 @@ variable `tab-line-tabs-function'."
                             (cdr (assq 'name tab))))
                     (face (funcall tab-line-tab-face-function
                                    tab tabs)))
+               (dolist (fn tab-line-tab-face-modifiers)
+                 (setf face (funcall fn tab tabs face)))
                (concat
                 separator
                 (apply 'propertize
@@ -482,40 +490,46 @@ variable `tab-line-tabs-function'."
                 tab-line-new-button)
        (list tab-line-new-button)))))
 
-(defun tab-line-tab-face-default (tab tabs)
-  "Return face for TAB in TABS.
+(defun tab-line-tab-face-default (tab _tabs)
+  "Return face for TAB.
 If TAB is selected, return `tab-line-tab-current' if the tab's
-window is also selected, otherwise `tab-line-tab'.
-
-Otherwise, if `tab-line-alternate-colors' is non-nil, return
-`tab-line-tab-inactive-alternate' for even-numbered tabs and
-`tab-line-tab-inactive' for odd-numbered ones.
-
-Otherwise, return `tab-line-tab-inactive'.
-
-If the tab's buffer is not file-backed, the returned face also
-inherits from `tab-line-tab-special'.
-
-For use as `tab-line-tab-face-function'."
+window is also selected, otherwise `tab-line-tab'.  Otherwise,
+return `tab-line-tab-inactive'.  For use as
+`tab-line-tab-face-function'."
   (let* ((buffer-p (bufferp tab))
-	 (selected-p (if buffer-p
-			 (eq tab (window-buffer))
-		       (cdr (assq 'selected tab))))
-	 (face (cond (selected-p
-		      (if (eq (selected-window) (old-selected-window))
-			  'tab-line-tab-current
-			'tab-line-tab))
-		     ((and tab-line-alternate-colors
-			   (cl-evenp (cl-position tab tabs)))
-		      'tab-line-tab-inactive-alternate)
-		     (t
-		      'tab-line-tab-inactive))))
-    (if (and buffer-p (not (buffer-file-name tab)))
-        ;; FIXME: The `tab-line' face's inheriting from
-        ;; `variable-pitch' seems to prevent inheriting from
-        ;; `tab-line-tab-special' applying italic slant.
-        `(:inherit (tab-line-tab-special ,face))
-      face)))
+         (selected-p (if buffer-p
+                         (eq tab (window-buffer))
+                       (cdr (assq 'selected tab)))))
+    (if selected-p
+        (if (eq (selected-window) (old-selected-window))
+            'tab-line-tab-current
+          'tab-line-tab)
+      'tab-line-tab-inactive)))
+
+(defun tab-line-tab-face-inactive-alternating (tab tabs face)
+  "Return FACE for TAB in TABS with alternation.
+When TAB is an inactive buffer and is even-numbered, make FACE
+inherit from `tab-line-tab-inactive-alternate'.  For use in
+`tab-line-tab-face-modifiers'."
+  (let* ((buffer-p (bufferp tab))
+         (selected-p (if buffer-p
+                         (eq tab (window-buffer))
+                       (cdr (assq 'selected tab)))))
+    (when (and (not selected-p) (cl-evenp (cl-position tab tabs)))
+      (setf face `(:inherit (tab-line-tab-inactive-alternate ,face)))))
+  face)
+
+(defun tab-line-tab-face-special (tab _tabs face)
+  "Return FACE for TAB according to whether it's special.
+When TAB is a non-file-backed buffer, make FACE inherit from
+`tab-line-tab-special'.  For use in
+`tab-line-tab-face-modifiers'."
+  ;; FIXME: When the face `tab-line' inherits from the face
+  ;; `variable-pitch', the face `tab-line-tab-special' doesn't seem to
+  ;; apply properly (e.g. its :slant has no effect).
+  (when (and (bufferp tab) (not (buffer-file-name tab)))
+    (setf face `(:inherit (tab-line-tab-special ,face))))
+  face)
 
 (defvar tab-line-auto-hscroll)
 
