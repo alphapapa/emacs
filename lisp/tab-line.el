@@ -45,7 +45,7 @@ all tabs."
   :group 'tab-line
   :version "28.1")
 
-(defcustom tab-line-tab-face-modifiers '(tab-line-tab-face-special)
+(defcustom tab-line-tab-face-functions '(tab-line-tab-face-special)
   "Functions called to modify tab faces.
 Each function is called with three arguments: the tab, a list of
 all tabs, and the face returned by the previously called
@@ -88,7 +88,7 @@ modifier."
   `((t (:inherit tab-line-tab-inactive :background "grey65")))
   "Alternate face for inactive tab-line tabs.
 Applied to alternating tabs when option
-`tab-line-tab-face-modifiers' includes function
+`tab-line-tab-face-functions' includes function
 `tab-line-tab-face-inactive-alternating'."
   :version "28.1"
   :group 'tab-line-faces)
@@ -98,7 +98,7 @@ Applied to alternating tabs when option
     (((supports :slant italic))
      (:slant italic :weight normal)))
   "Face for special (i.e. non-file-backed) tabs.
-Applied when option `tab-line-tab-face-modifiers' includes
+Applied when option `tab-line-tab-face-functions' includes
 function `tab-line-tab-face-special'."
   :version "28.1"
   :group 'tab-line-faces)
@@ -455,7 +455,7 @@ variable `tab-line-tabs-function'."
                             (cdr (assq 'name tab))))
                     (face (funcall tab-line-tab-face-function
                                    tab tabs)))
-               (dolist (fn tab-line-tab-face-modifiers)
+               (dolist (fn tab-line-tab-face-functions)
                  (setf face (funcall fn tab tabs face)))
                (concat
                 separator
@@ -513,7 +513,7 @@ return `tab-line-tab-inactive'.  For use as
   "Return FACE for TAB in TABS with alternation.
 When TAB is an inactive buffer and is even-numbered, make FACE
 inherit from `tab-line-tab-inactive-alternate'.  For use in
-`tab-line-tab-face-modifiers'."
+`tab-line-tab-face-functions'."
   (let* ((buffer-p (bufferp tab))
          (selected-p (if buffer-p
                          (eq tab (window-buffer))
@@ -526,7 +526,7 @@ inherit from `tab-line-tab-inactive-alternate'.  For use in
   "Return FACE for TAB according to whether it's special.
 When TAB is a non-file-backed buffer, make FACE inherit from
 `tab-line-tab-special'.  For use in
-`tab-line-tab-face-modifiers'."
+`tab-line-tab-face-functions'."
   ;; FIXME: When the face `tab-line' inherits from the face
   ;; `variable-pitch', the face `tab-line-tab-special' doesn't seem to
   ;; apply properly (e.g. its :slant has no effect).
