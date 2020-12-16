@@ -41,9 +41,10 @@
 Each function is called with five arguments: the tab, a list of
 all tabs, the face returned by the previously called modifier,
 whether the tab is a buffer, and whether the tab is selected."
-  :type '(repeat (choice (function-item tab-line-tab-face-special)
-                         (function-item tab-line-tab-face-inactive-alternating)
-                         (function :tag "Custom function")))
+  :type '(repeat
+          (choice (function-item tab-line-tab-face-special)
+                  (function-item tab-line-tab-face-inactive-alternating)
+                  (function :tag "Custom function")))
   :group 'tab-line
   :version "28.1")
 
