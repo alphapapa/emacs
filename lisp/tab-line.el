@@ -93,7 +93,10 @@ Applied to alternating tabs when option
   :version "28.1"
   :group 'tab-line-faces)
 
-(defface tab-line-tab-special '((t (:slant italic)))
+(defface tab-line-tab-special
+  '((default (:weight bold))
+    (((supports :slant italic))
+     (:slant italic :weight normal)))
   "Face for special (i.e. non-file-backed) tabs.
 Applied when option `tab-line-tab-face-modifiers' includes
 function `tab-line-tab-face-special'."
