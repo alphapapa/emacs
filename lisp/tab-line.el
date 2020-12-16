@@ -36,15 +36,6 @@
   :group 'convenience
   :version "27.1")
 
-(defcustom tab-line-tab-face-function #'tab-line-tab-face-default
-  "Function called to get a tab's face.
-The function is called with two arguments: the tab and a list of
-all tabs."
-  :type '(choice (function-item :tag "Default" tab-line-tab-face-default)
-                 (function :tag "Custom function"))
-  :group 'tab-line
-  :version "28.1")
-
 (defcustom tab-line-tab-face-functions '(tab-line-tab-face-special)
   "Functions called to modify tab faces.
 Each function is called with five arguments: the tab, a list of
@@ -453,8 +444,11 @@ variable `tab-line-tabs-function'."
                     (name (if buffer-p
                               (funcall tab-line-tab-name-function tab tabs)
                             (cdr (assq 'name tab))))
-                    (face (funcall tab-line-tab-face-function
-                                   tab tabs)))
+                    (face (if selected-p
+                              (if (eq (selected-window) (old-selected-window))
+                                  'tab-line-tab-current
+                                'tab-line-tab)
+                            'tab-line-tab-inactive)))
                (dolist (fn tab-line-tab-face-functions)
                  (setf face (funcall fn tab tabs face buffer-p selected-p)))
                (concat
@@ -492,22 +486,6 @@ variable `tab-line-tabs-function'."
                 tab-line-new-button-show
                 tab-line-new-button)
        (list tab-line-new-button)))))
-
-(defun tab-line-tab-face-default (tab _tabs)
-  "Return face for TAB.
-If TAB is selected, return `tab-line-tab-current' if the tab's
-window is also selected, otherwise `tab-line-tab'.  Otherwise,
-return `tab-line-tab-inactive'.  For use as
-`tab-line-tab-face-function'."
-  (let* ((buffer-p (bufferp tab))
-         (selected-p (if buffer-p
-                         (eq tab (window-buffer))
-                       (cdr (assq 'selected tab)))))
-    (if selected-p
-        (if (eq (selected-window) (old-selected-window))
-            'tab-line-tab-current
-          'tab-line-tab)
-      'tab-line-tab-inactive)))
 
 (defun tab-line-tab-face-inactive-alternating (tab tabs face _buffer-p selected-p)
   "Return FACE for TAB in TABS with alternation.
