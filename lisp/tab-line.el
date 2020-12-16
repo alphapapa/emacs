@@ -501,9 +501,6 @@ inherit from `tab-line-tab-inactive-alternate'.  For use in
 When TAB is a non-file-backed buffer, make FACE inherit from
 `tab-line-tab-special'.  For use in
 `tab-line-tab-face-functions'."
-  ;; FIXME: When the face `tab-line' inherits from the face
-  ;; `variable-pitch', the face `tab-line-tab-special' doesn't seem to
-  ;; apply properly (e.g. its :slant has no effect).
   (when (and buffer-p (not (buffer-file-name tab)))
     (setf face `(:inherit (tab-line-tab-special ,face))))
   face)
