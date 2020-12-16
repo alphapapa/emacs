@@ -50,9 +50,9 @@ all tabs."
 Each function is called with three arguments: the tab, a list of
 all tabs, and the face returned by the previously called
 modifier."
-  :type '(set (function-item tab-line-tab-face-special)
-              (function-item tab-line-tab-face-inactive-alternating)
-              (function :tag "Custom function"))
+  :type '(repeat (choice (function-item tab-line-tab-face-special)
+                         (function-item tab-line-tab-face-inactive-alternating)
+                         (function :tag "Custom function")))
   :group 'tab-line
   :version "28.1")
 
