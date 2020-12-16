@@ -47,9 +47,9 @@ all tabs."
 
 (defcustom tab-line-tab-face-functions '(tab-line-tab-face-special)
   "Functions called to modify tab faces.
-Each function is called with three arguments: the tab, a list of
-all tabs, and the face returned by the previously called
-modifier."
+Each function is called with five arguments: the tab, a list of
+all tabs, the face returned by the previously called modifier,
+whether the tab is a buffer, and whether the tab is selected."
   :type '(repeat (choice (function-item tab-line-tab-face-special)
                          (function-item tab-line-tab-face-inactive-alternating)
                          (function :tag "Custom function")))
@@ -456,7 +456,7 @@ variable `tab-line-tabs-function'."
                     (face (funcall tab-line-tab-face-function
                                    tab tabs)))
                (dolist (fn tab-line-tab-face-functions)
-                 (setf face (funcall fn tab tabs face)))
+                 (setf face (funcall fn tab tabs face buffer-p selected-p)))
                (concat
                 separator
                 (apply 'propertize
@@ -509,20 +509,16 @@ return `tab-line-tab-inactive'.  For use as
           'tab-line-tab)
       'tab-line-tab-inactive)))
 
-(defun tab-line-tab-face-inactive-alternating (tab tabs face)
+(defun tab-line-tab-face-inactive-alternating (tab tabs face _buffer-p selected-p)
   "Return FACE for TAB in TABS with alternation.
 When TAB is an inactive buffer and is even-numbered, make FACE
 inherit from `tab-line-tab-inactive-alternate'.  For use in
 `tab-line-tab-face-functions'."
-  (let* ((buffer-p (bufferp tab))
-         (selected-p (if buffer-p
-                         (eq tab (window-buffer))
-                       (cdr (assq 'selected tab)))))
-    (when (and (not selected-p) (cl-evenp (cl-position tab tabs)))
-      (setf face `(:inherit (tab-line-tab-inactive-alternate ,face)))))
+  (when (and (not selected-p) (cl-evenp (cl-position tab tabs)))
+    (setf face `(:inherit (tab-line-tab-inactive-alternate ,face))))
   face)
 
-(defun tab-line-tab-face-special (tab _tabs face)
+(defun tab-line-tab-face-special (tab _tabs face buffer-p _selected-p)
   "Return FACE for TAB according to whether it's special.
 When TAB is a non-file-backed buffer, make FACE inherit from
 `tab-line-tab-special'.  For use in
@@ -530,7 +526,7 @@ When TAB is a non-file-backed buffer, make FACE inherit from
   ;; FIXME: When the face `tab-line' inherits from the face
   ;; `variable-pitch', the face `tab-line-tab-special' doesn't seem to
   ;; apply properly (e.g. its :slant has no effect).
-  (when (and (bufferp tab) (not (buffer-file-name tab)))
+  (when (and buffer-p (not (buffer-file-name tab)))
     (setf face `(:inherit (tab-line-tab-special ,face))))
   face)
 
