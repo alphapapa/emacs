@@ -3992,6 +3992,63 @@ See also `with-temp-file' and `with-output-to-string'."
            (and (buffer-name ,temp-buffer)
                 (kill-buffer ,temp-buffer)))))))
 
+(defmacro with-file-buffer (file options &rest body)
+  "Evaluate BODY and return its value in a temp buffer for FILE.
+OPTIONS is a plist of the following options:
+
+`:insert': When non-nil (the default, when unspecified), insert
+file's contents before evaluating BODY, leaving point before the
+contents.
+
+`:must-exist': When non-nil, signal an error if no file exists at
+FILE.
+
+`:write': When non-nil, write the contents of the buffer to FILE
+after evaluating BODY.
+
+`:overwrite': When nil (the default, when unspecified), signal an
+error instead of overwriting an existing file at FILE.  If `ask',
+ask for confirmation before overwriting an existing file.  If t,
+overwrite a file at FILE unconditionally.
+
+`:visit': Passed to function `write-region', which see.
+
+`:lockname:' Passed to function `write-region', which see.
+
+`:append': Passed to function `write-region', which see.  (When
+using this option, you will probably want to specify `:insert
+nil' as well.)
+
+`:fsync': When non-nil (the default, when unspecified), bind
+`write-region-inhibit-fsync' (which see) to this value.
+
+`:precious': Bind `file-precious-flag' (which see) to this
+value (when unspecified, nil)."
+  (declare (indent 2) (debug (stringp form body)))
+  `(let ((write-region-inhibit-fsync ,(when (plist-member options :fsync)
+                                        (not (plist-get options :fsync))))
+         (file-precious-flag ,(plist-get options :precious)))
+     (with-temp-buffer
+       ,(when (or (not (plist-member options :insert))
+                  (plist-get options :insert))
+          `(if (file-readable-p ,file)
+               (save-excursion
+                 (insert-file-contents ,file))
+             (when ,(plist-get options :must-exist)
+               (error "File not readable: %s" ,file))))
+       (prog1
+           (progn
+             ,@body)
+         ,(when (plist-get options :write)
+            `(write-region nil nil ,file
+                           ,(plist-get options :append)
+                           ,(plist-get options :visit)
+                           ,(plist-get options :lockname)
+                           ,(pcase-exhaustive (plist-get options :overwrite)
+                              ('nil ''excl)
+                              ((or 'ask ''ask) ''ask)
+                              ('t nil))))))))
+
 (defmacro with-silent-modifications (&rest body)
   "Execute BODY, pretending it does not modify the buffer.
 This macro is typically used around modifications of
