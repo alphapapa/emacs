@@ -2311,6 +2311,12 @@ locales.  They are also available as aliases 'ebcdic-cp-*' (e.g.,
 'cp278' for 'ibm278').  There are also new charsets 'ibm2xx' to
 support these coding-systems.
 
+---
+** New macro 'with-file-buffer'.
+The new macro 'with-file-buffer' simplifies operating on the contents
+of files and/or writing to them, compared to using 'with-temp-buffer',
+'insert-file-contents', 'write-region', and various options
+separately.
 
 * Changes in Emacs 28.1 on Non-Free Operating Systems
 
