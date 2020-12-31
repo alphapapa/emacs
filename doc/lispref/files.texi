@@ -708,6 +708,54 @@ the hooks @code{kill-buffer-hook}, @code{kill-buffer-query-functions}
 (@pxref{Buffer List}).
 @end defmac
 
+@defmac with-file-buffer file options body@dots{}
+@anchor{Definition of with-file-buffer}
+Like the @code{with-temp-file} macro (which see), the
+@code{with-file-buffer} macro evaluates the @var{body} forms with a
+temporary buffer as the current buffer and then returns the value of
+the last form in @var{body}.  The @var{options} offer control over
+various aspects of the operations:
+
+@table @code
+@item :insert
+When non-nil (the default, when unspecified), insert @var{file}'s contents
+before evaluating @var{body}, leaving point before the contents.
+
+@item :must-exist
+When non-nil, signal an error if @var{file} does not exist.
+
+@item :write
+When non-nil, write the contents of the buffer to @var{file} after
+evaluating @var{body}.
+
+@item :overwrite
+When nil (the default, when unspecified), signal an error instead of
+overwriting an existing file.  If @code{ask}, ask for confirmation
+before overwriting an existing file.  If @code{t}, overwrite
+@var{file} unconditionally.
+
+@item :visit
+Passed to function @code{write-region}, which see.
+
+@item :lockname
+Passed to function @code{write-region}, which see.
+
+@item :append
+Passed to function @code{write-region}, which see.  (When using this
+option, you will probably want to specify @code{:insert nil} as well,
+otherwise the file's contents would be duplicated.)
+
+@item :fsync
+When non-nil (the default, when unspecified), bind
+@var{write-region-inhibit-fsync} (which see) to this value.
+
+@item :precious
+Bind @var{file-precious-flag} (which see) to this
+value (when unspecified, nil).
+@end table
+
+@end defmac
+
 @node File Locks
 @section File Locks
 @cindex file locks
